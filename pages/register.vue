@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { useSupabaseClient, useSupabaseUser } from "@nuxtjs/supabase";
 
 const email = ref("");
 const password = ref("");
