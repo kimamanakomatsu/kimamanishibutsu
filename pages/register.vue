@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { useRouter } from "vue-router";
-import { useSupabaseClient } from "@supabase/auth-helpers-nuxt";
-import { currentUser } from "~/app.vue"; // ← グローバル共有ステート
+// import { useRouter } from "vue-router";
+// import { useSupabaseClient } from "@supabase/auth-helpers-nuxt";
+// import { currentUser } from "~/app.vue"; // ← グローバル共有ステート
 
 /* フォーム状態 */
 const email = ref("");
@@ -12,6 +12,7 @@ const errorMsg = ref("");
 
 const router = useRouter();
 const supabase = useSupabaseClient();
+const currentUser = useCurrentUser();
 
 /* すでにログイン済みならトップへ */
 watch(

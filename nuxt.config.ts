@@ -1,11 +1,9 @@
+// nuxt.config.ts
 import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
   modules: [
-    // 既存
-    // '@nuxtjs/tailwindcss',
     '@nuxtjs/supabase',
-    // 追加
     '@nuxt/ui',
     '@nuxt/icon',
     '@nuxt/image',
@@ -13,18 +11,19 @@ export default defineNuxtConfig({
     '@nuxt/content'
   ],
 
-  image: {   // @nuxt/image
-    provider: 'ipx'          // IPX なら追加設定は不要。Vercel に合わせるなら 'vercel' も可
+  /* ← ★ 追加 ★ */
+  runtimeConfig: {
+    public: {
+      supabase: {
+        url: process.env.SUPABASE_URL ?? 'https://gsqzeofejwjjwcpigkhr.supabase.co',
+        key: process.env.SUPABASE_ANON_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzcXplb2ZlandqandjcGlna2hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2NDE2NTcsImV4cCI6MjA2NjIxNzY1N30.fZEbaFttcrf0k2eITyd_B_RfGm7MBbp3TKeYvK5P9dY'
+      }
+    }
   },
 
-  colorMode: {               // @nuxtjs/color-mode
-    classSuffix: '',
-    preference: 'system'     // ユーザーの OS 設定を優先
-  },
-
-  content: {                 // @nuxt/content
-    highlight: { theme: 'github-dark' }
-  },
+  image: { provider: 'ipx' },
+  colorMode: { classSuffix: '', preference: 'system' },
+  content: { highlight: { theme: 'github-dark' } },
 
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true }
