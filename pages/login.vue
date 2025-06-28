@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-// import { useRouter } from "vue-router";
-// import { useSupabaseClient } from "@supabase/auth-helpers-nuxt";
-// import { currentUser } from "~/app.vue"; // ← ここで共有ステートを参照
+import { useSupabaseClient, useSupabaseUser } from "@nuxtjs/supabase";
 
-/* フォーム状態 */
 const email = ref("");
 const password = ref("");
 const loading = ref(false);
@@ -12,18 +9,20 @@ const errorMsg = ref("");
 
 const router = useRouter();
 const supabase = useSupabaseClient();
-const currentUser = useCurrentUser();
+const currentUser = useSupabaseUser();
 
-/* すでにログイン済みならホームへ */
+/* すでにログイン済みならホームへリダイレクト */
 watch(
-  () => currentUser.value,
-  (u) => {
-    if (u) router.replace("/"); // 任意のトップページ
+  currentUser,
+  (user) => {
+    if (user) {
+      router.replace("/");
+    }
   },
   { immediate: true }
 );
 
-/* サインイン */
+/* サインイン処理 */
 const onSubmit = async () => {
   loading.value = true;
   errorMsg.value = "";
@@ -37,7 +36,7 @@ const onSubmit = async () => {
   if (error) {
     errorMsg.value = error.message;
   } else {
-    router.replace("/"); // 成功後に遷移
+    router.replace("/"); // 成功後にホームへ
   }
 };
 </script>

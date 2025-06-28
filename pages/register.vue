@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-// import { useRouter } from "vue-router";
-// import { useSupabaseClient } from "@supabase/auth-helpers-nuxt";
-// import { currentUser } from "~/app.vue"; // ← グローバル共有ステート
+import { useSupabaseClient, useSupabaseUser } from "@nuxtjs/supabase";
 
-/* フォーム状態 */
 const email = ref("");
 const password = ref("");
 const loading = ref(false);
@@ -12,18 +9,20 @@ const errorMsg = ref("");
 
 const router = useRouter();
 const supabase = useSupabaseClient();
-const currentUser = useCurrentUser();
+const currentUser = useSupabaseUser();
 
-/* すでにログイン済みならトップへ */
+/* ログイン状態になったらホームへリダイレクト */
 watch(
-  () => currentUser.value,
-  (u) => {
-    if (u) router.replace("/");
+  currentUser,
+  (user) => {
+    if (user) {
+      router.replace("/");
+    }
   },
   { immediate: true }
 );
 
-/* サインアップ */
+/* サインアップ処理 */
 const onSubmit = async () => {
   loading.value = true;
   errorMsg.value = "";
@@ -36,10 +35,8 @@ const onSubmit = async () => {
   loading.value = false;
   if (error) {
     errorMsg.value = error.message;
-  } else {
-    // signUp 成功時、Supabase はそのままログイン済み状態になる
-    router.replace("/");
   }
+  // 成功時のリダイレクトはwatchが担当するので、ここには不要です
 };
 </script>
 
