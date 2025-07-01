@@ -31,6 +31,11 @@ const onSubmit = async () => {
     ({ error } = await supabase.auth.signUp({
       email: email.value,
       password: password.value,
+      options: {
+        // ← ここを本番 URL に合わせる
+        emailRedirectTo:
+          "https://kimamanishibutsu-js45zs3gw-kimamanakomatsus-projects.vercel.app/confirm",
+      },
     }));
   }
 

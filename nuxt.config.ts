@@ -12,6 +12,12 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss'
   ],
 
+  runtimeConfig: {
+    public: {
+      baseUrl: process.env.NUXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    }
+  },
+
   // @nuxtjs/supabase モジュールの設定は、トップレベルに `supabase` オブジェクトとして記述します。
   supabase: {
     url: process.env.SUPABASE_URL,
