@@ -8,7 +8,8 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@nuxt/image',
     '@nuxtjs/color-mode',
-    '@nuxt/content'
+    '@nuxt/content',
+    '@nuxtjs/tailwindcss'
   ],
 
   // @nuxtjs/supabase モジュールの設定は、トップレベルに `supabase` オブジェクトとして記述します。
