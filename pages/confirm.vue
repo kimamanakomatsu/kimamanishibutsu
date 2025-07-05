@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRoute, useRouter } from "#imports"; // Nuxt auto-import
+import { useRoute, useRouter } from "#imports";
 import { useSupabaseClient } from "#imports";
 
 const route = useRoute();
@@ -11,39 +11,67 @@ const loading = ref(true);
 const errorMsg = ref("");
 
 onMounted(async () => {
-  console.log(
-    "[confirm] mounted, query=",
-    route.query,
-    "hash=",
-    window.location.hash
-  );
   try {
-    // 1) ハッシュ形式 (#access_token=) があれば getSessionFromUrl
+    // Magic Link (Hash方式)は従来通り
     if (window.location.hash.includes("access_token=")) {
-      console.log("[confirm] using getSessionFromUrl()");
       const { error } = await supabase.auth.getSessionFromUrl();
       if (error) throw error;
+      return router.replace("/dashboard");
     }
-    // 2) クエリ形式 (?code=xxx) があれば exchangeCodeForSession
-    else if (route.query.code) {
-      const code = route.query.code as string;
-      console.log("[confirm] using exchangeCodeForSession, code=", code);
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) throw error;
+    // PKCE: /confirm?code=xxxx&state=yyyy
+    else if (route.query.code && route.query.state) {
+      const state = String(route.query.state);
+      const code = String(route.query.code);
+      const key = `supabase.auth.flow_state.${state}`;
+      // localStorageにすでにcode_verifierがあれば即認証
+      if (localStorage.getItem(key)) {
+        await exchangeCode(code);
+      } else {
+        // なければstorageイベントで待機＆15秒タイムアウト
+        loading.value = true;
+        const timeout = setTimeout(() => {
+          window.removeEventListener("storage", storageListener);
+          errorMsg.value =
+            "認証に失敗しました。時間をおいて再度お試しください。";
+          loading.value = false;
+        }, 15000);
+        // storageイベントでflow_stateが追加されたら認証を続行
+        const storageListener = (event: StorageEvent) => {
+          if (event.key === key) {
+            clearTimeout(timeout);
+            window.removeEventListener("storage", storageListener);
+            exchangeCode(code);
+          }
+        };
+        window.addEventListener("storage", storageListener);
+      }
     } else {
-      throw new Error("no access_token or code in URL");
+      throw new Error(
+        "この画面では認証コードが取得できませんでした。\n\n" +
+          "・元の画面でダッシュボードが表示されている場合は、そのままご利用ください。\n" +
+          "・表示されない場合は、元の画面を再読み込みしてください。"
+      );
     }
-
-    // 成功したらダッシュボードへ
-    console.log("[confirm] success, redirecting to /dashboard");
-    return router.replace("/dashboard");
   } catch (e: any) {
-    console.error("[confirm] error", e);
     errorMsg.value = e.message ?? "確認に失敗しました";
   } finally {
     loading.value = false;
   }
 });
+
+// 認証処理を共通化
+const exchangeCode = async (code: string) => {
+  loading.value = true;
+  try {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+    router.replace("/dashboard");
+  } catch (err: any) {
+    errorMsg.value = err.message ?? "確認に失敗しました";
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
 
 <template>

@@ -2,7 +2,7 @@
 /* ──────────────────────────────────────────────
    共通ステート & Supabase 認証
 ────────────────────────────────────────────── */
-const mode = ref<"login" | "register">("login");
+const mode = ref<"login" | "register">("login"); // タブ状態
 const email = ref("");
 const password = ref("");
 const loading = ref(false);
@@ -13,34 +13,47 @@ const supabase = useSupabaseClient();
 const user = useSupabaseUser();
 const router = useRouter();
 
-/* ログイン済みならダッシュボードへ */
+/* ログイン済みならダッシュボードへ転送 */
 watch(user, (u) => u && router.replace("/dashboard"), { immediate: true });
 
-/* ログイン／サインアップ送信 */
+/* ログイン／サインアップ送信 (PKCE-OTP フロー) */
 const onSubmit = async () => {
   loading.value = true;
   errorMsg.value = "";
 
-  let error;
-  if (mode.value === "login") {
-    ({ error } = await supabase.auth.signInWithPassword({
-      email: email.value,
-      password: password.value,
-    }));
-  } else {
-    ({ error } = await supabase.auth.signUp({
-      email: email.value,
-      password: password.value,
-      options: {
-        // ← ここを本番 URL に合わせる
-        emailRedirectTo:
-          "https://kimamanishibutsu-js45zs3gw-kimamanakomatsus-projects.vercel.app/confirm",
-      },
-    }));
-  }
+  try {
+    const redirectTo = `${useRuntimeConfig().public.baseUrl}/confirm`;
 
-  loading.value = false;
-  if (error) errorMsg.value = error.message;
+    if (mode.value === "login") {
+      /* 既存ユーザー — PKCE 付き OTP ログイン */
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.value,
+        options: {
+          flowType: "pkce", // ★重要
+          emailRedirectTo: redirectTo,
+        },
+      });
+      if (error) throw error;
+    } else {
+      /* 新規ユーザー — 登録 & 同じく PKCE 付き OTP */
+      const { error } = await supabase.auth.signUp({
+        email: email.value,
+        password: password.value,
+        options: {
+          flowType: "pkce", // ★重要
+          emailRedirectTo: redirectTo,
+        },
+      });
+      if (error) throw error;
+    }
+
+    // ここまで来ればメール送信成功
+    errorMsg.value = "確認メールを送信しました。受信トレイをご確認ください。";
+  } catch (e: any) {
+    errorMsg.value = e?.message ?? "エラーが発生しました";
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
@@ -53,7 +66,7 @@ const onSubmit = async () => {
     <div
       class="w-full max-w-md rounded-2xl bg-white/90 shadow-2xl ring-1 ring-black/5 backdrop-blur-md p-8"
     >
-      <!-- タブ切替 with トランジション -->
+      <!-- タブ切替 -->
       <div class="mb-8 flex justify-center gap-6 text-lg font-semibold">
         <button
           @click="mode = 'login'"
@@ -175,12 +188,17 @@ const onSubmit = async () => {
         </form>
       </Transition>
 
-      <!-- エラー表示 -->
+      <!-- メール送信後のメッセージ / エラー -->
       <Transition name="fade">
         <p
           v-if="errorMsg"
           key="error"
-          class="mt-6 text-center text-sm text-red-600"
+          class="mt-6 text-center text-sm"
+          :class="
+            errorMsg.startsWith('確認メール')
+              ? 'text-indigo-600'
+              : 'text-red-600'
+          "
         >
           {{ errorMsg }}
         </p>
@@ -190,7 +208,6 @@ const onSubmit = async () => {
 </template>
 
 <style scoped>
-/* シンプルなフェード */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
